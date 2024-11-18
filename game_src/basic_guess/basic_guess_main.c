@@ -80,9 +80,9 @@ void basic_guess_main() {
             }
         } else {
              if (offense == P1_OFFENSE) {
-                    p2->score++;
+                p2->score++;
              } else {
-                    p1->score++;
+                p1->score++;
              }
         }
 
