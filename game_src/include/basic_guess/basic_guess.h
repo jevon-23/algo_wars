@@ -16,15 +16,9 @@
 #define FOR_EACH_PLAYER(p) for (int p = 0; p < NUM_PLAYERS; p++)
 typedef struct game_state {
     int turn_num;
+    int *players_scores;
     int winner;
 }game_state_t;
-
-typedef struct player {
-    uint8_t score;
-    bool (*offense_algo)(void);
-    bool (*defense_algo)(void);
-
-} player_t;
 
 void basic_guess_main();
 
