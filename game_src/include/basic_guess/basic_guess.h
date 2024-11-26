@@ -7,6 +7,9 @@
 #define MAX_SCORE 10
 #define NUM_PLAYERS 2
 
+#define _T "T"
+#define _F "F"
+
 #define OFFENSE_WIN true 
 #define DEFENSE_WIN false
 
