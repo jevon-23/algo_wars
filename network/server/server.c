@@ -1,3 +1,4 @@
+#include <pthread.h>
 #include <stdio.h>
 #include <sys/socket.h> 
 #include <stdlib.h>
@@ -7,8 +8,7 @@
 #include <strings.h>
 #include <unistd.h>
 
-#include "./include/server.h"
-#include "../include/lobby.h"
+#include <server.h>
 
 #define MAX 0xffff
 #define PORT 8080 
@@ -82,7 +82,9 @@ bool process_menu_input(lobby_player_t *player, uint32_t user_input) {
     return exit_server;
 }
 
-void run_server(server_sockets_t *server_sockets) {
+void *run_server(void *_server_sockets) {
+    server_sockets_t *server_sockets = (server_sockets_t *) _server_sockets;
+
     char buff[MAX];
     char *raw_user_input;
     uint32_t user_input;
@@ -91,6 +93,9 @@ void run_server(server_sockets_t *server_sockets) {
     int n = 0;
 
     uint32_t connfd = server_sockets->connfd;
+    uint32_t sockfd = server_sockets->sockfd;
+
+    printf("run_server: connfd: %d, sockfd: %d\n", connfd, sockfd);
 
     /* Ask new connection for name */
     lobby_player_t *player = initialize_user(connfd);
@@ -110,6 +115,7 @@ void run_server(server_sockets_t *server_sockets) {
 
     }
 
+    return NULL;
 }
 
 server_sockets_t *server_setup() {
@@ -137,38 +143,43 @@ server_sockets_t *server_setup() {
     }
     printf("Binded the socket\n");
 
+    /* Main thread will continue to listen for connections */
+
+    server_sockets_t *server_sockets = (server_sockets_t *)malloc(sizeof(server_sockets_t));
     if ((listen(sockfd, 5)) != 0) {
         printf("Failed to start listening\n");
         exit(-1);
     }
     printf("Listening for a connection\n");
 
-    sockaddr_in_t cli;
-    int len;
-    uint32_t connfd = accept(sockfd, (struct sockaddr *)&cli, (socklen_t *)&len);
+#if 0 // TODO: pthread
+    while (true) {
+#endif
 
-    if (connfd == -1) {
-        printf("Failed to connect to server\n");
-        exit(-1);
+        sockaddr_in_t cli;
+        int len;
+        uint32_t connfd = accept(sockfd, (struct sockaddr *)&cli, (socklen_t *)&len);
+
+        if (connfd == -1) {
+            printf("Failed to connect to server\n");
+            exit(-1);
+        }
+
+        printf("server and client are connected\n");
+
+
+        server_sockets->sockfd = sockfd;
+        server_sockets->connfd = connfd;
+
+        // Add this when we add multi-connection functionality
+        // pthread_t tid;
+        // pthread_create(&tid, NULL, run_server, (void *)server_sockets);
+#if 0 // TODO: pthread
     }
-
-    printf("server and client are connected\n");
-
-    server_sockets_t *server_sockets = (server_sockets_t *)malloc(sizeof(server_sockets_t));
-    server_sockets->sockfd = sockfd;
-    server_sockets->connfd = connfd;
+#endif
 
     return server_sockets;
 }
-
-// Run this on a thread that runs in the background, that we are able to
-// pull from based on interrupts. When the client has something going on, 
-// we can halt game play because we are not actively running the game.
-// void server_run() {
-//     for (;;) {
-// 
-//     }
-// }
 
 int main() {
     server_sockets_t *server_sockets = server_setup();

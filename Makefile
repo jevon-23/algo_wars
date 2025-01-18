@@ -34,10 +34,21 @@ BASIC_GUESS_BIN=$(BASIC_GUESS_BIN_DIR)/basic_guess
 # BASIC_GUESS_DELIVERABLE_BIN=$(BASIC_GUESS_BIN_DIR)/basic_guess_deliverable.so
 BASIC_GUESS_CFLAGS=$(CFLAGS) -DBG=1
 
+# Lobby Variables
+LOBBY_SRC=$(LOBBY_SRC_DIR)/lobby.c
+
 # Server variables
-SERVER_MAIN=$(SERVER_SRC_DIR/server.c)
+SERVER_MAIN=$(SERVER_SRC_DIR)/server.c
 SERVER_INC=$(NETWORK_IDIR)/server
 SERVER_BIN=$(ODIR)/server
+
+SERVER_SRC=$(SERVER_MAIN) \
+		   $(LOBBY_SRC)
+
+
+CLIENT_MAIN=$(CLIENT_SRC_DIR)/client.c
+CLIENT_BIN=$(ODIR)/client
+CLIENT_SRC=$(CLIENT_MAIN)
 
 main:
 	$(CC) -o $(ODIR)/ai_war $(MAIN)
@@ -48,9 +59,10 @@ bg:
 	$(CC) $(BASIC_GUESS_CFLAGS) -o $(BASIC_GUESS_BIN) $(BASIC_GUESS_INC) $(BASIC_GUESS_SRC)
 
 server:
-	$(CC) $(CFLAGS) -o $(SERVER_BIN) $(SERVER_INC) $(SERVER_MAIN)
+	$(CC) $(CFLAGS) -o $(SERVER_BIN) $(SERVER_INC) $(SERVER_SRC)
 
-
+client:
+	$(CC) $(CFLAGS) -o $(CLIENT_BIN) $(CLIENT_SRC)
 
 
 clean:

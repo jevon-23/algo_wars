@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <time.h>
 
-#include "../include/lobby.h"
+#include <lobby.h>
 
 bool add_player_to_lobby(lobby_t *lobby, lobby_player_t *player) {
     if (lobby->num_players >= lobby->max_num_players) {
