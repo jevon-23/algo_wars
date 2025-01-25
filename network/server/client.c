@@ -9,6 +9,87 @@
 #include <client.h>
 #include <lobby.h>
 
+/************************************/
+/* Client Linked list funcitonality */
+/************************************/
+client_node_t *client_node_init(client_node_t *prev, client_node_t *next, client_t *node, uint32_t *length, bool is_head) {
+    client_node_t *client_node = (client_node_t *)malloc(sizeof(client_node_t));
+    client_node->prev = prev;
+    client_node->next = next;
+    client_node->node = node;
+    client_node->length = length;
+    client_node->is_head = is_head;
+}
+
+bool client_node_append(client_node_t *head, client_node_t *node) {
+    if (!head->is_head) {
+        /* This enforces that no client will be able to append a new node */
+        printf("Nodes other than head cannot append a new node\n");
+        return false;
+    }
+
+    if (head->length == 0) {
+        /* Update head */
+        head->prev = node;
+        head->next = node;
+        
+        /* Update node */
+        node->prev = head;
+        node->next = head;
+
+    } else {
+        /* Update last node */
+        head->prev->next = node;
+
+        /* Update node */
+        node->prev = head->prev;
+        node->next = head;
+
+        /* Update head */
+        head->prev = node;
+
+    }
+
+
+    *(head->length)++;
+    free(node);
+    return true;
+}
+
+bool client_node_remove(client_node_t *node) {
+    if (node->is_head) {
+        printf("Cannot remove head node\n");
+        return false;
+    }
+
+    // If node is the only node in the list, then set head->prev & next -> NULL
+    if (node->prev->is_head && node->next->is_head) {
+        client_node_t *head = node->prev;
+        // Remove references in head
+        head->next = NULL;
+        head->prev = NULL;
+    } else {
+        node->prev->next = node->next;
+        node->next->prev = node->prev;
+    }
+
+
+
+    // Update the length of the linked list before removing references
+    *(node->length)--;
+
+    // Remove references on the node
+    node->next = NULL;
+    node->prev = NULL;
+    node->length = NULL;
+
+    // Do we free node here? 
+    free(node);
+}
+
+/******************************************/
+/* Server -> Client Interaction functions */
+/******************************************/
 lobby_player_t *initialize_user(uint32_t connfd) {
     printf("\n");
     char buff[MAX];

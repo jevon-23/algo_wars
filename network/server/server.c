@@ -20,7 +20,28 @@ void teardown_server(uint32_t sockfd) {
     close(sockfd);
 }
 
-server_sockets_t *run_server() {
+/* Server struct functions */
+server_t *server_init() {
+    server_t *server = (server_t *)malloc(sizeof(server_t));
+
+    /* Create the client node linked list */
+    uint32_t *client_node_len = (uint32_t *)malloc(sizeof(uint32_t));
+    *client_node_len = 0;
+    server->client_node_head = client_node_init(NULL, NULL, NULL, client_node_len, true);
+
+    server->lobbies = (lobby_t **)malloc(sizeof(lobby_t *) * MAX_NUM_LOBBIES);
+    server->num_lobbies = 0;
+
+    return server;
+}
+
+bool server_add_client(server_t *server, client_t *client) {
+
+    return false;
+}
+
+/* Server loop */
+server_sockets_t *server_run(server_t *server) {
     uint32_t sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (sockfd == -1) {
         printf("Failed to create socket\n");
@@ -75,13 +96,15 @@ server_sockets_t *run_server() {
         server_sockets->connfd = connfd;
 
         client_t *new_client = start_client(server_sockets);
+
     }
 
     return server_sockets;
 }
 
 int main() {
-    server_sockets_t *server_sockets = run_server();
+    server_t *server = server_init();
+    server_sockets_t *server_sockets = server_run(server);
 
     teardown_server(server_sockets->sockfd);
 }

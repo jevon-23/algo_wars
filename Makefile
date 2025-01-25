@@ -46,6 +46,10 @@ SERVER_SRC=$(SERVER_MAIN) \
 			$(SERVER_SRC_DIR)/client.c \
 			$(LOBBY_SRC)
 
+SERVER_FLAGS=$(CC) \
+			 $(CFLAGS) \
+			 -pthread
+
 
 CLIENT_MAIN=$(CLIENT_SRC_DIR)/client.c
 CLIENT_BIN=$(ODIR)/client
@@ -60,7 +64,7 @@ bg:
 	$(CC) $(BASIC_GUESS_CFLAGS) -o $(BASIC_GUESS_BIN) $(BASIC_GUESS_INC) $(BASIC_GUESS_SRC)
 
 server:
-	$(CC) $(CFLAGS) -o $(SERVER_BIN) $(SERVER_INC) $(SERVER_SRC)
+	$(SERVER_FLAGS) -o $(SERVER_BIN) $(SERVER_INC) $(SERVER_SRC)
 
 client:
 	$(CC) $(CFLAGS) -o $(CLIENT_BIN) $(CLIENT_SRC)

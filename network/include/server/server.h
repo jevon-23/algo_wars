@@ -10,10 +10,9 @@
 #define MAX_NUM_LOBBIES 0xf
 
 typedef struct server {
-   client_t **clients;
-   uint32_t num_clients;
+   client_node_t *client_node_head;
 
-   lobby_t **lobies;
+   lobby_t **lobbies;
    uint32_t num_lobbies;
 } server_t;
 
