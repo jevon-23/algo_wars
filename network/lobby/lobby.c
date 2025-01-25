@@ -2,8 +2,10 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <string.h>
 #include <time.h>
 
+#include <client.h>
 #include <lobby.h>
 
 bool add_player_to_lobby(lobby_t *lobby, lobby_player_t *player) {
@@ -17,9 +19,14 @@ bool add_player_to_lobby(lobby_t *lobby, lobby_player_t *player) {
 }
 
 lobby_player_t *init_lobby_player(char *name, uint32_t connfd) {
+    if (strlen(name) > MAX_NAME_LEN-1) {
+        return NULL;
+    }
+
     lobby_player_t *new_player = (lobby_player_t *)malloc(sizeof(lobby_player_t));
 
-    new_player->name = name;
+    new_player->name = (char *)malloc(sizeof(char) * MAX_NAME_LEN);
+    strncpy(new_player->name, name, MAX_NAME_LEN-1);
     new_player->max_name_len = MAX_NAME_LEN;
 
     new_player->connfd = connfd;

@@ -11,7 +11,7 @@ enum game_flag_e {
 };
 
 // TODO: Substitute this for MAX once we start compiling w/ make? 
-#define MAX_NAME_LEN (80)
+#define MAX_NAME_LEN (0x10)
 
 // TODO: BG Game max num players
 #define BG_MAX_NUM_PLAYERS (2)

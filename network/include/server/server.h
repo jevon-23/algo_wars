@@ -1,24 +1,13 @@
 #ifndef SERVER_H
 #define SERVER_H
 
+#include <common.h>
 #include <inttypes.h>
-#include <pthread.h>
 #include <lobby.h>
+#include <pthread.h>
 
 #define MAX_NUM_CLIENTS 0xf
 #define MAX_NUM_LOBBIES 0xf
-
-typedef struct server_sockets_t {
-    uint32_t sockfd;
-    uint32_t connfd;
-
-} server_sockets_t;
-
-typedef struct client_t {
-    server_sockets_t *server_socket;
-    pthread_t tid;
-
-} client_t;
 
 typedef struct server {
    client_t **clients;

@@ -43,7 +43,8 @@ SERVER_INC=$(NETWORK_IDIR)/server
 SERVER_BIN=$(ODIR)/server
 
 SERVER_SRC=$(SERVER_MAIN) \
-		   $(LOBBY_SRC)
+			$(SERVER_SRC_DIR)/client.c \
+			$(LOBBY_SRC)
 
 
 CLIENT_MAIN=$(CLIENT_SRC_DIR)/client.c
