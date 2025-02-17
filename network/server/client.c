@@ -9,87 +9,66 @@
 #include <client.h>
 #include <lobby.h>
 
-/************************************/
-/* Client Linked list funcitonality */
-/************************************/
-client_node_t *client_node_init(client_node_t *prev, client_node_t *next, client_t *node, uint32_t *length, bool is_head) {
-    client_node_t *client_node = (client_node_t *)malloc(sizeof(client_node_t));
-    client_node->prev = prev;
-    client_node->next = next;
-    client_node->node = node;
-    client_node->length = length;
-    client_node->is_head = is_head;
+/*******************************/
+/* Client_node_t functionality.*/
+/*******************************/
+
+void client_node_print(client_node_t *node) {
+    client_t *client = (client_t *)node->node;
+    printf("client tid: %p\n", client->tid);
+}
+
+void client_node_print_all(client_node_t *head) {
+    if (!head->is_head) {
+        printf("Please run %s on head", __FUNCTION__);
+        return;
+    }
+
+    if (head->next == NULL) {
+        printf("No clients are connected\n");
+        return;
+    }
+    client_node_t *node = head->next;
+    do {
+        client_node_print(node);
+        node = node->next;
+    } while (node != head);
+
+
+}
+
+client_node_t *client_node_init(client_t *client, uint32_t *length, bool is_head) {
+    if (client == NULL && !is_head) {
+        printf("We have a NULL client, need to kill process\n");
+        return NULL;
+    }
+    client_node_t *client_node =  (client_node_t *)ll_node_init(client, length, is_head);
+
+    if (client_node == NULL) {
+        printf("Failed to initialized client node\n");
+    }
+
+    if (client != NULL && !is_head) {
+        client->client_node = client_node;
+    } else {
+        printf("client is NULL!\n");
+    }
+    return client_node;
 }
 
 bool client_node_append(client_node_t *head, client_node_t *node) {
-    if (!head->is_head) {
-        /* This enforces that no client will be able to append a new node */
-        printf("Nodes other than head cannot append a new node\n");
-        return false;
-    }
-
-    if (head->length == 0) {
-        /* Update head */
-        head->prev = node;
-        head->next = node;
-        
-        /* Update node */
-        node->prev = head;
-        node->next = head;
-
-    } else {
-        /* Update last node */
-        head->prev->next = node;
-
-        /* Update node */
-        node->prev = head->prev;
-        node->next = head;
-
-        /* Update head */
-        head->prev = node;
-
-    }
-
-
-    *(head->length)++;
-    free(node);
-    return true;
+    return ll_node_append((ll_node_t *)head, (ll_node_t *)node);
 }
 
 bool client_node_remove(client_node_t *node) {
-    if (node->is_head) {
-        printf("Cannot remove head node\n");
-        return false;
-    }
+    return  ll_node_remove((ll_node_t *)node);
 
-    // If node is the only node in the list, then set head->prev & next -> NULL
-    if (node->prev->is_head && node->next->is_head) {
-        client_node_t *head = node->prev;
-        // Remove references in head
-        head->next = NULL;
-        head->prev = NULL;
-    } else {
-        node->prev->next = node->next;
-        node->next->prev = node->prev;
-    }
-
-
-
-    // Update the length of the linked list before removing references
-    *(node->length)--;
-
-    // Remove references on the node
-    node->next = NULL;
-    node->prev = NULL;
-    node->length = NULL;
-
-    // Do we free node here? 
-    free(node);
 }
 
 /******************************************/
 /* Server -> Client Interaction functions */
 /******************************************/
+
 lobby_player_t *initialize_user(uint32_t connfd) {
     printf("\n");
     char buff[MAX];
@@ -114,14 +93,27 @@ lobby_player_t *initialize_user(uint32_t connfd) {
     printf("New players name is: %s\n", player->name);
 
     char *end_init = (char *)malloc(sizeof(char) * MAX);
-    sprintf(end_init, "Thank you %s Choose an option from the following:", player->name);
+    sprintf(end_init, "Thank you %s.\nChoose an option from the following:", player->name);
     write(connfd, end_init, MAX);
 
+
+    free(new_name);
+    free(end_init);
     return player;
 }
 
-bool process_menu_input(lobby_player_t *player, uint32_t user_input) {
+void send_lobby_info(uint32_t connfd, lobby_t *lobby) {
+    char buff[MAX];
+    bzero(buff, MAX);
+    sprintf(buff, "%x", lobby->room_id);
+    write(connfd, buff, MAX);
+
+    printf("%s\n", buff);
+}
+
+bool process_menu_input(lobby_player_t *player, uint32_t user_input, uint32_t connfd) {
     bool exit_server = false;
+    char buff[MAX];
 
     /* Current Menu Inputs:
      *
@@ -133,14 +125,16 @@ bool process_menu_input(lobby_player_t *player, uint32_t user_input) {
     switch(user_input) {
         case 1:
             exit_server = true;
-            printf("Exiting server\n");
+            printf("player: %s has left the server\n", player->name);
             break;
         case 2:
             exit_server = false;
             lobby_t *lobby = init_lobby(BG_GAME, BG_MAX_NUM_PLAYERS);
             add_player_to_lobby(lobby, player);
+            print_lobby_details(lobby);
+            send_lobby_info(connfd, lobby);
+            printf(buff, "Created new lobby, id: %x\nAdded player: %s to lobby: %x", lobby->room_id, player->name, lobby->room_id);
             /* TODO: Write this to the usr */
-            printf("Created new lobby w/ id: %x, Added player: %s to lobby\n", lobby->room_id, player->name);
             break;
         case 3:
             printf("Not implemented yet\n");
@@ -178,7 +172,7 @@ void *run_client(void *_client) {
         read(connfd, buff, sizeof(buff));
         user_input = strtol(buff, &raw_user_input, 10);
 
-        exit_server = process_menu_input(player, user_input);
+        exit_server = process_menu_input(player, user_input, connfd);
 
         if (exit_server) {
             break;
@@ -186,15 +180,20 @@ void *run_client(void *_client) {
 
     }
 
+    client_node_remove(client->client_node);
     return NULL;
 }
 
-client_t *start_client(server_sockets_t *server_sockets) {
+client_t *client_init(server_sockets_t *server_sockets) {
     client_t *client = (client_t *)malloc(sizeof(client));
     client->server_sockets = server_sockets;
-    pthread_t tid;
-    pthread_create(&tid, NULL, run_client, (void *)client);
-
-    client->tid = tid;
+    client->client_node = NULL;
+    //client->tid = NULL;
     return client;
+}
+
+void start_client(client_t *client) {
+    pthread_t tid;
+    client->tid = tid;
+    pthread_create(&tid, NULL, run_client, (void *)client);
 }

@@ -20,24 +20,34 @@ void teardown_server(uint32_t sockfd) {
     close(sockfd);
 }
 
+server_t *server;
+
 /* Server struct functions */
 server_t *server_init() {
-    server_t *server = (server_t *)malloc(sizeof(server_t));
+    server = (server_t *)malloc(sizeof(server_t));
 
     /* Create the client node linked list */
     uint32_t *client_node_len = (uint32_t *)malloc(sizeof(uint32_t));
     *client_node_len = 0;
-    server->client_node_head = client_node_init(NULL, NULL, NULL, client_node_len, true);
-
-    server->lobbies = (lobby_t **)malloc(sizeof(lobby_t *) * MAX_NUM_LOBBIES);
-    server->num_lobbies = 0;
+    server->client_node_head = (client_node_t *) client_node_init(NULL, client_node_len, true);
+    uint32_t *lobby_node_len = (uint32_t *)malloc(sizeof(uint32_t));
+    *lobby_node_len = 0;
+    server->lobby_node_head = (lobby_node_t *) lobby_node_init(NULL, lobby_node_len, true);
 
     return server;
 }
 
-bool server_add_client(server_t *server, client_t *client) {
+void server_add_client(server_t *server, client_node_t *client_node) {
+    client_node_append(server->client_node_head, client_node);
+}
 
-    return false;
+void server_add_lobby(server_t *server, lobby_node_t *lobby_node) {
+    lobby_node_append(server->lobby_node_head, lobby_node);
+    printf("New lobby has been added, all lobbyies will be printed below: \n"); 
+}
+
+server_t *get_server() {
+    return server;
 }
 
 /* Server loop */
@@ -95,7 +105,12 @@ server_sockets_t *server_run(server_t *server) {
         server_sockets->sockfd = sockfd;
         server_sockets->connfd = connfd;
 
-        client_t *new_client = start_client(server_sockets);
+        client_t* client = client_init(server_sockets);
+        client_node_t *client_node = client_node_init(client, server->client_node_head->length, false);
+        server_add_client(server, client_node);
+        client_node_print_all(server->client_node_head);
+
+        start_client(client);
 
     }
 

@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -8,12 +9,30 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 
+#include <lobby.h>
+
 #define MAX 0xffff
 #define PORT 8080 
 
 typedef struct sockaddr_in sockaddr_in_t;
 
-void set_username(uint32_t sockfd) {
+lobby_t *new_lobby(uint32_t sockfd, lobby_player_t *player) {
+    char buff[MAX];
+    bzero(buff, sizeof(buff));
+    read(sockfd, buff, MAX);
+
+    char *strtol_ptr_end;
+
+    uint32_t room_id = strtol(buff, &strtol_ptr_end, 16);
+    lobby_t *lobby = init_lobby(BG_GAME, room_id);
+    add_player_to_lobby(lobby, player);
+    printf("You have joined new lobby: %s\n", buff);
+    printf("Waiting for others to join...\n");
+    printf("Number players in game: %d\n", 1);
+    return lobby;
+}
+
+lobby_player_t *set_username(uint32_t sockfd) {
     char buff[MAX];
     int n;
 
@@ -31,12 +50,15 @@ void set_username(uint32_t sockfd) {
     write(sockfd, buff, sizeof(buff));
     n = 0;
 
+    lobby_player_t *player = init_lobby_player(buff);
 
     /* Read out confirmation that it came through */
     bzero(buff, sizeof(buff));
     read(sockfd, buff, MAX);
 
     printf("%s\n", buff);
+
+    return player;
 }
 
 void init_menu() {
@@ -45,12 +67,17 @@ void init_menu() {
     printf("3: join game\n");
 }
 
-void chat(int sockfd) {
+void run_client(uint32_t sockfd) {
     char buff[MAX];
+    char *raw_user_input;
     int n;
+
+    bool finished = false;
+
+    uint32_t client_input;
     bzero(buff, sizeof(buff));
 
-    set_username(sockfd);
+    lobby_player_t *player = set_username(sockfd);
     init_menu();
 
     for (;;) {
@@ -61,12 +88,22 @@ void chat(int sockfd) {
         printf("writing: %s to server\n", buff);
         write(sockfd, buff, sizeof(buff));
 
-        /* TODO: Change this to use strtol */
-        if (strncmp(buff, "1", 1) == 0) {
-            printf("Exiting client\n");
-            break;
+        client_input = strtol(buff, &raw_user_input, 10);
+        switch(client_input) {
+            case 1:
+                finished = true;
+                printf("Exiting client\n");
+                break;
+            case 2:
+                new_lobby(sockfd, player);
+                break;
+            default:
+                printf("input has not yet been implemented\n");
         }
 
+        if (finished) {
+            break;
+        }
     }
 }
 
@@ -93,6 +130,6 @@ int main() {
     }
     printf("Connected to the server\n");
 
-    chat(sockfd);
+    run_client(sockfd);
     return 0;
 }
