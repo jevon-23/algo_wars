@@ -69,6 +69,7 @@ bool client_node_remove(client_node_t *node) {
 /* Server -> Client Interaction functions */
 /******************************************/
 
+/* Initialize the user in the server */
 lobby_player_t *initialize_user(uint32_t connfd) {
     printf("\n");
     char buff[MAX];
@@ -92,28 +93,78 @@ lobby_player_t *initialize_user(uint32_t connfd) {
 
     printf("New players name is: %s\n", player->name);
 
-    char *end_init = (char *)malloc(sizeof(char) * MAX);
-    sprintf(end_init, "Thank you %s.\nChoose an option from the following:", player->name);
-    write(connfd, end_init, MAX);
+    // char *end_init = (char *)malloc(sizeof(char) * MAX);
+    // sprintf(end_init, "Thank you %s.", player->name);
+    // write(connfd, end_init, MAX);
 
 
     free(new_name);
-    free(end_init);
+    // free(end_init);
     return player;
 }
-
+// Send lobby info from server to client
 void send_lobby_info(uint32_t connfd, lobby_t *lobby) {
     char buff[MAX];
     bzero(buff, MAX);
-    sprintf(buff, "%x", lobby->room_id);
-    write(connfd, buff, MAX);
 
-    printf("%s\n", buff);
+    // INFO BEING SENT OVER
+    // uint8 room_id
+    // uint8 num_players
+    // player names
+
+    sprintf(buff, "%x %x", lobby->room_id, lobby->num_players);
+
+    bool finished = false;
+    lobby_player_t *player = *lobby->players;
+    uint8_t player_iter = 0;
+    do  {
+        sprintf(buff, "%s %s", buff, player->name);
+        player_iter++;
+
+        finished = player_iter >= lobby->num_players;
+        if (!finished) {
+            player = *(lobby->players + player_iter);
+        }
+    }while(!finished);
+    write(connfd, buff, sizeof(buff));
+    printf("%s: %s\n", __FUNCTION__, buff);
+}
+
+// Create a new lobby, send the client lobby info
+void client_new_lobby(lobby_player_t *player, uint32_t connfd) {
+    char buff[MAX];
+    lobby_t *lobby = init_lobby(BG_GAME, BG_MAX_NUM_PLAYERS);
+    add_player_to_lobby(lobby, player);
+    print_lobby_details(lobby);
+    send_lobby_info(connfd, lobby);
+    printf(buff, "Created new lobby, id: %x\nAdded player: %s to lobby: %x", lobby->room_id, player->name, lobby->room_id);
+    /* TODO: Write this to the usr */
+}
+
+// Join a lobby based on a lobby_id. Update lobby, send updated lobby info to all users in lobby
+void client_join_lobby(lobby_player_t *player, uint32_t connfd) {
+    /* Ask user to send the lobby id that they would like to join */
+    char buff[MAX];
+    char *strtol_end_ptr;
+    // bzero(buff, MAX);
+    // sprintf(buff, "Please enter the room id that you would like to join");
+    // write(connfd, buff, MAX);
+    
+    // Read the lobby id
+    bzero(buff, MAX);
+    do {
+        read(connfd, buff, sizeof(buff));
+    }while(sizeof(buff) == 0);
+
+    uint32_t room_id = strtol(buff, &strtol_end_ptr, 16);
+    printf("read the room id %x\n", room_id);
+    lobby_t *lobby = lobby_player_join(player, room_id);
+
+    send_lobby_info(connfd, lobby);
 }
 
 bool process_menu_input(lobby_player_t *player, uint32_t user_input, uint32_t connfd) {
     bool exit_server = false;
-    char buff[MAX];
 
     /* Current Menu Inputs:
      *
@@ -129,15 +180,11 @@ bool process_menu_input(lobby_player_t *player, uint32_t user_input, uint32_t co
             break;
         case 2:
             exit_server = false;
-            lobby_t *lobby = init_lobby(BG_GAME, BG_MAX_NUM_PLAYERS);
-            add_player_to_lobby(lobby, player);
-            print_lobby_details(lobby);
-            send_lobby_info(connfd, lobby);
-            printf(buff, "Created new lobby, id: %x\nAdded player: %s to lobby: %x", lobby->room_id, player->name, lobby->room_id);
-            /* TODO: Write this to the usr */
+            client_new_lobby(player, connfd);
             break;
         case 3:
-            printf("Not implemented yet\n");
+            exit_server = false;
+            client_join_lobby(player, connfd);
             break;
        default:
             printf("Bad input\n");

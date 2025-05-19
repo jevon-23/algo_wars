@@ -22,7 +22,7 @@ enum game_flag_e {
 
 typedef struct lobby_player_t {
     bool is_host;
-    char *name;
+    char name[MAX_NAME_LEN];
     uint8_t max_name_len;
 #if SERVER
     uint32_t pid;
@@ -55,6 +55,7 @@ lobby_player_t *init_lobby_player(char *name);
 #endif
 
 bool add_player_to_lobby(lobby_t *lobby, lobby_player_t *player);
+lobby_t *lobby_player_join(lobby_player_t *player, uint32_t lobby_id);
 
 void print_lobby_details(lobby_t *lobby);
 #endif // LOBBY_H

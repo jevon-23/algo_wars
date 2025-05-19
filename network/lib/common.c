@@ -80,6 +80,7 @@ bool ll_node_remove(ll_node_t *node) {
     return true;
 }
 
+/* Print functions */
 void print_back(ll_node_t *head) {
     ll_node_t *node = head->prev;
     for (int i = 0; i < *(head->length); i++) {

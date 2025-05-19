@@ -15,8 +15,10 @@
 /****************************/
 void print_lobby_details(lobby_t *lobby);
 
+static lobby_t *all_lobbies_head;
 
 #if SERVER
+/* Print functions */
 void lobby_node_print(lobby_node_t *node) {
     lobby_t *lobby = (lobby_t *)node->node;
     print_lobby_details(lobby);
@@ -41,6 +43,7 @@ void lobby_node_print_all(lobby_node_t *head) {
 
 }
 
+/* Init */
 lobby_node_t *lobby_node_init(lobby_t *lobby, uint32_t *length, bool is_head) {
     lobby_node_t *lobby_node =  (lobby_node_t *)ll_node_init(lobby, length, is_head);
 
@@ -50,6 +53,7 @@ lobby_node_t *lobby_node_init(lobby_t *lobby, uint32_t *length, bool is_head) {
     return lobby_node;
 }
 
+/* LL api */ 
 bool lobby_node_append(lobby_node_t *head, lobby_node_t *node) {
     return ll_node_append((ll_node_t *)head, (ll_node_t *)node);
 }
@@ -58,6 +62,36 @@ bool lobby_node_remove(lobby_node_t *node) {
     return  ll_node_remove((ll_node_t *)node);
 
 }
+
+/* Misc */
+lobby_t *get_lobby(lobby_node_t *head, uint32_t room_id) {
+    if (!head->is_head) {
+        printf("Please run %s on head", __FUNCTION__);
+        return NULL;
+    }
+
+    if (head->next == NULL) {
+        printf("No lobbys are connected\n");
+        return NULL;
+    }
+
+    uint32_t length = *head->length;
+    lobby_node_t *node = head->next;
+
+    for(uint32_t i = 0; i < length; i++) {
+        if (node == head) {
+            break;
+        }
+
+        lobby_t *lobby = (lobby_t *)node->node;
+        if (lobby->room_id == room_id) {
+            return lobby;
+        }
+        node = node->next;
+    }
+    return NULL;
+}
+
 #endif
 
 /***********************/
@@ -79,6 +113,27 @@ bool add_player_to_lobby(lobby_t *lobby, lobby_player_t *player) {
     return true;
 }
 
+lobby_t *lobby_player_join(lobby_player_t *player, uint32_t room_id) {
+#if SERVER
+    server_t *server = get_server();
+    lobby_t *lobby_ptr = get_lobby(server->lobby_node_head, room_id);
+
+    if (lobby_ptr == NULL) {
+        printf("Could not find lobby to join\n");
+        return NULL;
+    }
+
+    if (!(add_player_to_lobby(lobby_ptr, player))) {
+        printf("Failed to add player %s to lobby: %x\n", player->name, room_id);
+        return NULL;
+    }
+    return lobby_ptr;
+#else
+    printf("FUNCTION NOT IMPLEMENTEDD\n");
+    return NULL;
+#endif
+}
+
 #if SERVER
 lobby_player_t *init_lobby_player(char *name, uint32_t connfd) {
 #else
@@ -90,7 +145,6 @@ lobby_player_t *init_lobby_player(char *name) {
 
     lobby_player_t *new_player = (lobby_player_t *)malloc(sizeof(lobby_player_t));
 
-    new_player->name = (char *)malloc(sizeof(char) * MAX_NAME_LEN);
     strncpy(new_player->name, name, strlen(name)-1);
     new_player->max_name_len = MAX_NAME_LEN;
 

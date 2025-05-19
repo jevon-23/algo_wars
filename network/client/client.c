@@ -16,19 +16,94 @@
 
 typedef struct sockaddr_in sockaddr_in_t;
 
-lobby_t *new_lobby(uint32_t sockfd, lobby_player_t *player) {
+void read_lobby_info(uint32_t sockfd) {
     char buff[MAX];
-    bzero(buff, sizeof(buff));
-    read(sockfd, buff, MAX);
+    bzero(buff, MAX);
 
+    do {
+        read(sockfd, buff, MAX);
+    } while (sizeof(buff) < 2);
+
+
+    printf("Read from server:\n%s\n", buff);
     char *strtol_ptr_end;
 
     uint32_t room_id = strtol(buff, &strtol_ptr_end, 16);
+    if (room_id == 0x0) {
+        printf("invalid room id, server may have crashed\n");
+        return;
+    }
+
+    uint32_t num_players = strtol(strtol_ptr_end, &strtol_ptr_end, 16);
+    char *strtok_ptr = strtol_ptr_end;
+    char *player_name = strtok_r(strtok_ptr, " ", &strtol_ptr_end);
+
+    printf("You have joined new lobby: %x\n", room_id);
+    printf("Waiting for others to join...\n");
+    printf("Number players in game: %d\n", num_players);
+    printf("Players in game:\n");
+    for (int i = 0; i < num_players; i++) {
+        printf("%s\n", player_name);
+        player_name = strtok_r(NULL, " ", &strtol_ptr_end);
+    }
+
+}
+
+void join_lobby(uint32_t sockfd, lobby_player_t *player) {
+    char buff[MAX];
+    int n;
+    printf("client is inside of: %s\n", __FUNCTION__);
+
+    /* Read server response out from server */
+    // read(sockfd, buff, MAX);
+    // printf("%s\n", buff);
+
+    printf("Please enter the room id that you would like to join\n");
+
+    // Write lobby_id that we want to join
+    n=0;
+    bzero(buff, sizeof(buff));
+    while((buff[n++] = getchar()) != '\n');
+    write(sockfd, buff, sizeof(buff));
+
+    // Read back the server info
+
+    read_lobby_info(sockfd);
+
+    return;
+}
+
+lobby_t *new_lobby(uint32_t sockfd, lobby_player_t *player) {
+    char buff[MAX];
+    bzero(buff, sizeof(buff));
+
+    read(sockfd, buff, MAX);
+
+    printf("Read from server:\n%s\n", buff);
+    char *strtol_ptr_end;
+
+    uint32_t room_id = strtol(buff, &strtol_ptr_end, 16);
+    if (room_id == 0x0) {
+        printf("invalid room id, server may have crashed\n");
+        return NULL;
+    }
+
     lobby_t *lobby = init_lobby(BG_GAME, room_id);
     add_player_to_lobby(lobby, player);
-    printf("You have joined new lobby: %s\n", buff);
+
+    uint32_t num_players = strtol(strtol_ptr_end, &strtol_ptr_end, 16);
+
+    printf("You have joined new lobby: %x\n", room_id);
     printf("Waiting for others to join...\n");
-    printf("Number players in game: %d\n", 1);
+    printf("Number players in game: %d\n", num_players);
+    printf("Players in game:\n");
+    char *strtok_ptr = strtol_ptr_end;
+    char *player_name = strtok_r(strtok_ptr, " ", &strtol_ptr_end);
+    for (int i = 0; i < num_players; i++) {
+        printf("%s\n", player_name);
+        player_name = strtok(NULL, " ");
+    }
+
     return lobby;
 }
 
@@ -53,10 +128,10 @@ lobby_player_t *set_username(uint32_t sockfd) {
     lobby_player_t *player = init_lobby_player(buff);
 
     /* Read out confirmation that it came through */
-    bzero(buff, sizeof(buff));
-    read(sockfd, buff, MAX);
+    // bzero(buff, sizeof(buff));
+    // read(sockfd, buff, MAX);
 
-    printf("%s\n", buff);
+    printf("Thank you %s\n", player->name);
 
     return player;
 }
@@ -97,6 +172,10 @@ void run_client(uint32_t sockfd) {
             case 2:
                 new_lobby(sockfd, player);
                 break;
+            case 3:
+                join_lobby(sockfd, player);
+                break;
+
             default:
                 printf("input has not yet been implemented\n");
         }
