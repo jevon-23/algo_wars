@@ -21,6 +21,7 @@ enum game_flag_e {
 #define BG_MAX_NUM_PLAYERS (2)
 
 typedef struct lobby_player_t {
+    bool in_lobby;
     bool is_host;
     char name[MAX_NAME_LEN];
     uint8_t max_name_len;

@@ -65,12 +65,14 @@ SERVER_FLAGS=$(CC) \
 
 # Client variables
 CLIENT_MAIN=$(CLIENT_SRC_DIR)/client.c
+CLIENT_LOBBY=$(CLIENT_SRC_DIR)/client_lobby.c
 CLIENT_INC=$(NETWORK_IDIR)/client \
 		   $(LOBBY_INC) \
 		   $(COMMON_INC)
 
 CLIENT_BIN=$(ODIR)/client
 CLIENT_SRC=$(CLIENT_MAIN) \
+		   $(CLIENT_LOBBY) \
 		   $(COMMON_SRC) \
 		   $(LOBBY_SRC)
 

@@ -3,8 +3,10 @@
 #include <lobby.h>
 
 typedef struct client_t {
-    char *name;
-    lobby_t *lobby;
+    uint32_t sockfd;
+    lobby_player_t *player;
+    uint8_t room_id;
 }client_t;
 
+#include <client_lobby.h>
 #endif

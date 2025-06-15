@@ -126,7 +126,24 @@ void send_lobby_info(uint32_t connfd, lobby_t *lobby) {
             player = *(lobby->players + player_iter);
         }
     }while(!finished);
-    write(connfd, buff, sizeof(buff));
+
+    finished = false;
+    player = *lobby->players;
+    player_iter = 0;
+    do  {
+        uint32_t p_connfd = player->connfd;
+        // printf("Writing buff to %s\n", player->name);
+        write(p_connfd, buff, sizeof(buff));
+        player_iter++;
+
+        finished = player_iter >= lobby->num_players;
+        if (!finished) {
+            player = *(lobby->players + player_iter);
+        }
+    }while(!finished);
+
+
+    // write(connfd, buff, sizeof(buff));
     printf("%s: %s\n", __FUNCTION__, buff);
 }
 

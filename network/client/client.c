@@ -9,6 +9,7 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 
+#include <client.h>
 #include <lobby.h>
 
 #define MAX 0xffff
@@ -16,7 +17,8 @@
 
 typedef struct sockaddr_in sockaddr_in_t;
 
-void read_lobby_info(uint32_t sockfd) {
+// Returns back lobby id as a uint8
+uint8_t read_lobby_info(uint32_t sockfd) {
     char buff[MAX];
     bzero(buff, MAX);
 
@@ -31,7 +33,7 @@ void read_lobby_info(uint32_t sockfd) {
     uint32_t room_id = strtol(buff, &strtol_ptr_end, 16);
     if (room_id == 0x0) {
         printf("invalid room id, server may have crashed\n");
-        return;
+        return 0x0;;
     }
 
     uint32_t num_players = strtol(strtol_ptr_end, &strtol_ptr_end, 16);
@@ -47,9 +49,10 @@ void read_lobby_info(uint32_t sockfd) {
         player_name = strtok_r(NULL, " ", &strtol_ptr_end);
     }
 
+    return room_id;
 }
 
-void join_lobby(uint32_t sockfd, lobby_player_t *player) {
+uint8_t join_lobby(uint32_t sockfd, lobby_player_t *player) {
     char buff[MAX];
     int n;
     printf("client is inside of: %s\n", __FUNCTION__);
@@ -67,10 +70,7 @@ void join_lobby(uint32_t sockfd, lobby_player_t *player) {
     write(sockfd, buff, sizeof(buff));
 
     // Read back the server info
-
-    read_lobby_info(sockfd);
-
-    return;
+    return read_lobby_info(sockfd);
 }
 
 lobby_t *new_lobby(uint32_t sockfd, lobby_player_t *player) {
@@ -142,6 +142,14 @@ void init_menu() {
     printf("3: join game\n");
 }
 
+client_t *client_init(uint32_t sockfd, lobby_player_t *player) {
+    client_t *client = (client_t *)malloc(sizeof(client_t));
+    client->sockfd = sockfd;
+    client->player = player;
+    client->room_id = 0x0;
+    return client;
+}
+
 void run_client(uint32_t sockfd) {
     char buff[MAX];
     char *raw_user_input;
@@ -153,8 +161,9 @@ void run_client(uint32_t sockfd) {
     bzero(buff, sizeof(buff));
 
     lobby_player_t *player = set_username(sockfd);
-    init_menu();
+    client_t *client = client_init(sockfd, player);
 
+    init_menu();
     for (;;) {
 
         n = 0;
@@ -170,12 +179,13 @@ void run_client(uint32_t sockfd) {
                 printf("Exiting client\n");
                 break;
             case 2:
-                new_lobby(sockfd, player);
+                client->room_id = (new_lobby(sockfd, player))->room_id;
+                client_jump_to_lobby(client);
                 break;
             case 3:
-                join_lobby(sockfd, player);
+                client->room_id = join_lobby(sockfd, player);
+                client_jump_to_lobby(client);
                 break;
-
             default:
                 printf("input has not yet been implemented\n");
         }
