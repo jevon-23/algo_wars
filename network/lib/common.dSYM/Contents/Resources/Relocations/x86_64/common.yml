@@ -1,0 +1,12 @@
+---
+triple:          'x86_64-apple-darwin'
+binary-path:     common
+relocations:
+  - { offsetInCU: 0x26, offset: 0x26, size: 0x8, addend: 0x0, symName: _ll_node_init, symObjAddr: 0x0, symBinAddr: 0x100003930, symSize: 0x60 }
+  - { offsetInCU: 0xC6, offset: 0xC6, size: 0x8, addend: 0x0, symName: _ll_node_init, symObjAddr: 0x0, symBinAddr: 0x100003930, symSize: 0x60 }
+  - { offsetInCU: 0x118, offset: 0x118, size: 0x8, addend: 0x0, symName: _ll_node_append, symObjAddr: 0x60, symBinAddr: 0x100003990, symSize: 0x110 }
+  - { offsetInCU: 0x14E, offset: 0x14E, size: 0x8, addend: 0x0, symName: _ll_node_remove, symObjAddr: 0x170, symBinAddr: 0x100003AA0, symSize: 0xF0 }
+  - { offsetInCU: 0x192, offset: 0x192, size: 0x8, addend: 0x0, symName: _print_back, symObjAddr: 0x260, symBinAddr: 0x100003B90, symSize: 0x70 }
+  - { offsetInCU: 0x1E0, offset: 0x1E0, size: 0x8, addend: 0x0, symName: _print_forward, symObjAddr: 0x2D0, symBinAddr: 0x100003C00, symSize: 0x70 }
+  - { offsetInCU: 0x22E, offset: 0x22E, size: 0x8, addend: 0x0, symName: _main, symObjAddr: 0x340, symBinAddr: 0x100003C70, symSize: 0x22A }
+...
